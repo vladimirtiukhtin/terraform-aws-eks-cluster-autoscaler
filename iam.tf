@@ -73,3 +73,159 @@ resource "aws_iam_policy" "cluster_autoscaler" {
     ]
   })
 }
+
+resource "kubernetes_cluster_role_binding_v1" "cluster_autoscaler" {
+  metadata {
+    name = local.name
+    labels = local.labels
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role_v1.cluster_autoscaler.metadata.0.name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account_v1.cluster_autoscaler.metadata.0.name
+    namespace = var.namespace
+  }
+}
+
+
+resource "kubernetes_cluster_role_v1" "cluster_autoscaler" {
+  metadata {
+    name   = local.name
+    labels = local.labels
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["events", "endpoints"]
+    verbs      = ["create", "patch"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods/eviction"]
+    verbs      = ["create"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods/status"]
+    verbs      = ["update"]
+  }
+
+  rule {
+    api_groups     = [""]
+    resources      = ["endpoints"]
+    resource_names = ["cluster-autoscaler"]
+    verbs          = ["get", "update"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["nodes"]
+    verbs      = ["watch", "list", "get", "update"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources = [
+      "namespaces",
+      "pods",
+      "services",
+      "replicationcontrollers",
+      "persistentvolumeclaims",
+      "persistentvolumes"
+    ]
+    verbs = ["watch", "list", "get"]
+  }
+
+  rule {
+    api_groups = ["extensions"]
+    resources  = ["replicasets", "daemonsets"]
+    verbs      = ["watch", "list", "get"]
+  }
+
+  rule {
+    api_groups = ["policy"]
+    resources  = ["poddisruptionbudgets"]
+    verbs      = ["watch", "list"]
+  }
+
+  rule {
+    api_groups = ["apps"]
+    resources  = ["statefulsets", "replicasets", "daemonsets"]
+    verbs      = ["watch", "list", "get"]
+  }
+
+  rule {
+    api_groups = ["storage.k8s.io"]
+    resources  = ["storageclasses", "csinodes", "csidrivers", "csistoragecapacities"]
+    verbs      = ["watch", "list", "get"]
+  }
+
+  rule {
+    api_groups = ["batch", "extensions"]
+    resources  = ["jobs"]
+    verbs      = ["get", "list", "watch", "patch"]
+  }
+
+  rule {
+    api_groups = ["coordination.k8s.io"]
+    resources  = ["leases"]
+    verbs      = ["create"]
+  }
+
+  rule {
+    api_groups     = ["coordination.k8s.io"]
+    resources      = ["leases"]
+    resource_names = ["cluster-autoscaler"]
+    verbs          = ["get", "update"]
+  }
+}
+
+resource "kubernetes_role_binding_v1" "cluster_autoscaler" {
+  metadata {
+    name      = local.name
+    namespace = var.namespace
+    labels    = local.labels
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role_v1.cluster_autoscaler.metadata.0.name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account_v1.cluster_autoscaler.metadata.0.name
+    namespace = var.namespace
+  }
+}
+
+
+resource "kubernetes_role_v1" "cluster_autoscaler" {
+  metadata {
+    name      = local.name
+    namespace = var.namespace
+    labels    = local.labels
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["configmaps"]
+    verbs      = ["create", "list", "watch"]
+  }
+
+  rule {
+    api_groups     = [""]
+    resources      = ["configmaps"]
+    resource_names = ["cluster-autoscaler-status", "cluster-autoscaler-priority-expander"]
+    verbs          = ["delete", "get", "update", "watch"]
+  }
+}

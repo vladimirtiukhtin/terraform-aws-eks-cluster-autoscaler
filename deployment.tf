@@ -97,6 +97,7 @@ resource "kubernetes_deployment_v1" "cluster_autoscaler" {
   }
   wait_for_rollout = var.wait_for_rollout
   depends_on = [
-    kubernetes_cluster_role_binding
+    kubernetes_cluster_role_binding_v1.cluster_autoscaler,
+    kubernetes_cluster_role_v1.cluster_autoscaler
   ]
 }
